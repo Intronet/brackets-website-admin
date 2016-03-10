@@ -1,0 +1,120 @@
+<% 
+	/* Setup some variables for the template to usee */
+var
+	ExtensionManager = brackets.getModule("extensibility/ExtensionManager"),
+	mData = $g.EX.extensions["brackets-website-admin"].installInfo.metadata,
+	version = parseInt((mData.version).replace(/\./g,''),10),
+    PF = brackets.getModule("preferences/PreferencesManager"),
+    prefs = PF.getExtensionPrefs("brackets-website-admin");
+	/* This is only available to the dev ip address */
+	if (typeof(dev) !== 'undefined') {
+		if(dev === true){
+			// code goes here
+		}
+	}
+	// End
+%>
+   <div class="extensions-dialog modal">
+      <div class="modal-header">
+         <a href="#" class="close" data-dismiss="modal">×</a>
+         <h1 class="dialog-title"><a class="_spinner _iL fa fa-archive"></a> Enable extensions </h1>
+      </div>
+      <div class="modal-body no-padding table-striped tab-content">
+         <div class="form-horizontal">
+            <form action="javascript:;" class="control-group">
+               <table class="table">
+
+               <tr align="top">
+               <td nowrap>Brackets Persistent History<br>0.0.1</td>   
+               <td>Extension that saves editing history between changing projects or closing Brackets</td>   
+               <td align="middle"><% var checked = prefs.get("history") === true ? 'checked="checked"' : '' %>
+                  <input class="history" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>
+
+               <tr align="top">
+               <td nowrap>Brackets Backup<br>1.0.4</td>   
+               <td>File Backup Extension for Brackets. This extension will create a backup copy (appended with the current dateTime stamp) of the active file in its current directory</td>   
+               <td align="middle"><% var checked = prefs.get("backup") === true ? 'checked="checked"' : '' %>
+                  <input class="backup" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>  
+                  
+               <tr align="top">
+               <td nowrap>Tabs - Custom Working<br>5.0.2</td>
+               <td>Adds working files tabs toolbar for active documents on the top of the editor</td>   
+               <td align="middle"><% var checked = prefs.get("tabs") === true ? 'checked="checked"' : '' %>
+                  <input class="tabs" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>  
+               </tr>             
+
+               <tr align="top">
+               <td nowrap>Brackets File Icons<br>1.3.1</td>   
+               <td>File icons in Brackets' file tree</td>   
+               <td align="middle"><% var checked = prefs.get("tree") === true ? 'checked="checked"' : '' %>
+                  <input class="tree" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>
+                  
+               <tr align="top">   
+               <td nowrap>Indent Guides<br>1.3.5</td>   
+               <td>Show indent guides in the code editor</td>   
+               <td align="middle"><% var checked = prefs.get("indent") === true ? 'checked="checked"' : '' %>
+                  <input class="indent" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr> 
+
+               <tr align="top">
+               <td nowrap>Draggable modals<br>0.1.1</td>   
+               <td>Modal windows in Brackets now can be dragged with mouse across the screen</td>   
+               <td align="middle"><% var checked = prefs.get("modals") === true ? 'checked="checked"' : '' %>
+                  <input class="modals" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>
+
+               <tr align="top">
+               <td nowrap>Cursor Options<br>0.0.3</td>   
+               <td>Change cursor display style (block, vertical, horizontal), color, and blink rate</td>   
+               <td align="middle"><% var checked = prefs.get("cursor") === true ? 'checked="checked"' : '' %>
+                  <input class="cursor" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>                   
+
+               <tr align="top">
+               <td nowrap>Pop-up Menu Brackets<br>4.0.0</td>   
+               <td>A Brackets extension that add additional functionality to Brackets editor right menu like cut, copy, paste, save all, Camel Case, UPPERCASE, lowercase and some functionality from edit menu</td>   
+               <td align="middle"><% var checked = prefs.get("pop-up-menu") === true ? 'checked="checked"' : '' %>
+                  <input class="pop-up-menu" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>   
+
+               <tr align="top">
+               <td nowrap>Show Recently Used Items<br>0.5.7</td>   
+               <td>Add a menu at the top of the editor with a list of all the files shown recently</td>   
+               <td align="middle"><% var checked = prefs.get("recent") === true ? 'checked="checked"' : '' %>
+                  <input class="recent" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>               
+
+               <tr align="top">
+               <td nowrap>Jump to Matching Brace<br>1.1.0</td>   
+               <td>Jump cursor from one brace/bracket/parenthesis to its matching counterpart by tapping Ctrl-Shift-[</td>   
+               <td align="middle"><% var checked = prefs.get("matching-brace") === true ? 'checked="checked"' : '' %>
+                  <input class="matching-brace" type="checkbox" data-value="" value="true" <%=checked %>>
+               </td>   
+               </tr>                  
+                  
+               </table>
+            </form>
+         </div>
+      </div>
+      <div class="modal-footer">
+         <span class="statusMsg"></span>
+         <button type="button" class="dialog-button btn" data-dismiss="modal" data-button-id="close">Close</button>
+         <% if (typeof(selfclose) !== 'undefined') {
+   if(selfclose === false)	{ %>
+            <button class="dialog-button btn primary callback" data-button-id="update">OK</button>
+            <% }} %>
+      </div>
+
+   </div>

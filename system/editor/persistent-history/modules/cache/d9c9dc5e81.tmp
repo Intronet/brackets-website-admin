@@ -1,0 +1,13 @@
+/*jslint vars: true, plusplus: true, devel: true, nomen: true, regexp: true, indent: 3, maxerr: 999 */
+/*global $, Node, EJS, define, Mustache, brackets, debugger, window, console, eval */
+
+define(["require", "exports", 'module', './sys/init'], function (require, exports, module, init) {
+   "use strict";
+   var
+      PF = brackets.getModule("preferences/PreferencesManager"),
+      prefs = PF.getExtensionPrefs("brackets-website-admin");
+   if(!prefs.get("tabs") || prefs.get("tabs") === false){
+      return false;
+   }   
+
+});

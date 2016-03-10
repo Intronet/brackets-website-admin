@@ -1,0 +1,83 @@
+#recents-settings-dialog {
+   width: 850px;
+   min-width: 550px
+}
+#recents-settings-dialog .closeModal {
+   position: absolute;
+   padding: 15px 18px;
+   top: 0;
+   right: 0;
+   font-weight: bold;
+   font-size: 1.4em
+}
+.modal-body.RECENTSMANAGER {
+   max-height: 600px;
+   padding: 0
+}
+.RECENTSMANAGER table {
+   width: 100%;
+   height: auto;
+   display: table
+}
+.RECENTSMANAGER tr {
+   padding: 8px 0 8px 0;
+   border-bottom: 1px solid #ccc
+}
+.RECENTSMANAGER tr:last-child {
+   border-bottom-width: 0
+}
+.RECENTSMANAGER table,
+.RECENTSMANAGER td {
+   border-width: 1px;
+   border-color:#333 !important;
+}
+.RECENTSMANAGER td {
+   padding: 12px
+}
+/*.RECENTSMANAGER td span {
+   color: #a80f0f
+}
+.RECENTSMANAGER td b {
+   color: #222
+}
+*/
+.RECENTSMANAGER .leftRCNT {
+   width: 44%;
+   border-right: 1px solid #ccc
+}
+.RECENTSMANAGER .centerRCNT {
+   width: 8%;
+   border-right: 1px solid #ccc
+}
+.RECENTSMANAGER input[type="checkbox"] {
+   margin-left: 50%
+}
+.RECENTSMANAGER .centerRCNT.noPadding {
+   padding: 0;
+   vertical-align: top
+}
+.RECENTSMANAGER .rightRCNT {
+   width: 46%
+}
+.RECENTSMANAGER input {
+   margin-bottom: 0;
+   align-content: center;
+   text-align: center;
+   vertical-align: middle
+}
+.RECENTSMANAGER input[type="number"] {
+   width: 106px
+}
+.RECENTSMANAGER .cntntEditable {
+   background-color: #fcfafa;
+   padding: 4px 6px;
+   color: #222;
+   width: 130px!important;
+   max-width: 130px;
+   min-width: 130px;
+   height: 80px!important;
+   border-radius: 0;
+   resize: none;
+   overflow-x: hidden;
+   margin: 0!important
+}

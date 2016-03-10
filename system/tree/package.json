@@ -1,0 +1,18 @@
+{
+    "name": "brackets-website-admin.icon-tree-drewkoch.icons",
+    "title": "Brackets File Icons",
+    "description": "File icons in Brackets' file tree.",
+    "homepage": "https://github.com/drewbkoch/Brackets-File-Icons",
+    "version": "1.3.1",
+    "author": "Drew Koch (https://github.com/drewbkoch)",
+    "license": "MIT",
+    "keywords": [
+		"icons",
+		"file",
+		"tree",
+		"sidebar"
+    ],
+    "engines": {
+        "brackets": ">=1.1.x"
+    }
+}

@@ -1,0 +1,9 @@
+<div id="info" style="margin:0 4px;text-align:center">
+	<h1 style="text-align:center"><a class="spinner iL large spin" style="position: relative;top: 5px;"></a> 
+		Brackets Website Admin</h1>
+	
+  <p>Welcome Nigel Francois</p>
+  
+	<p style="position: relative;top: 10px;margin:0;"><a><span style="padding:0 3px;position:relative;top:-2px;" class="error">Your current version v<%= version %></span>
+		<br>New version available v0.0.4</a></p>
+</div>

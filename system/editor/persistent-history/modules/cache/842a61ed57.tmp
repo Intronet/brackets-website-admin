@@ -1,0 +1,1233 @@
+/*jslint node: true, vars: true, plusplus: true, devel: true, nomen: true, white: true, regexp: true, indent: 2, maxerr: 50 
+
+*/
+/*global define, $, brackets, Mustache, window, console, Node, CryptoJS,  EJS, getComputedStyle, CodeMirror
+
+*/
+/********************************************************************************
+MS = Menus                     AP = AppInit                     DL = Dialogs                     CS = Commands
+ND = NodeDomain                SU = StringUtils                 EM = EditorManager               EU = ExtensionUtils
+MV = MainViewManager           CM = CommandManager              WM = WorkspaceManager            DM = DocumentManager
+PM = ProjectManager            PR = PreferencesManager
+
+eD = editor                    cA = configApp                   sT = salt                        storage = localstorage
+iD = ".informer-dialog"        iDl =  "informer-dialog"         dC = "defaultConfig"             bP = "#browser-panel"
+mB = ".modal-body"             active = "#ftpTree li a.active"  selectedText = ""                eT = event.target
+cS = "Contacting server..."    nD = nodeDomain                  wysiwyg = []                     docIndex = 1
+BP = browserPanel              ftp                              g = GLOBAL
+
+pF: previewFile()              dT:  deleteFile()                cF: copyFile()                   rF: renameFile()
+uL: upload()                   dL: download()                   eF: editFile()                   fP: fileProperties()
+tRe: ftpTree()                 iS: initlocalStorage()           gS: getlocalStorage()            sS: setlocalStorage()
+uS: updatelocalStorage()       rC: runCmd()                     sP: setProjectPreferences()      sD: showDialog()
+sW: showSuccess()              rZ: resizeIframe()               sZ: serializeFormJSON()          eH: eventHandlers()
+uB: updateBrowserWindow()      uE: updateEditor()               tB: toggleBrowser()              aE:activeEditorChange()
+cL: startTime()                bZ: bytesToSize()
+********************************************************************************/
+(function () {
+	'use strict';
+	define(function (require, exports, module) {
+		/*require('./editor/persistent-history/history');
+		require('./editor/indent-softwraps/softwraps');
+		require('./editor/indent-guides/indent');
+		require('./editor/pop-up-menu/pop-up-menu');
+		require('./editor/cursor/cursor');*/
+		require('./encryption/CryptoJS');
+		/*require('./modals/modals');
+		require('./tree/tree');
+		require('./tabs/tabs');*/
+		require('./ejs/ejs');
+		/*  define all application variables, objects, fuctions and classes */
+		var start = true;
+		var
+			MS = brackets.getModule("command/Menus"),
+			AP = brackets.getModule('utils/AppInit'),
+			DL = brackets.getModule("widgets/Dialogs"),
+			DC = brackets.getModule("document/Document"),
+			CS = brackets.getModule("command/Commands"),
+			ND = brackets.getModule("utils/NodeDomain"),
+			SU = brackets.getModule("utils/StringUtils"),
+			EM = brackets.getModule("editor/EditorManager"),
+			EU = brackets.getModule("utils/ExtensionUtils"),
+			MV = brackets.getModule("view/MainViewManager"),
+			CM = brackets.getModule("command/CommandManager"),
+			WM = brackets.getModule("view/WorkspaceManager"),
+			DM = brackets.getModule("document/DocumentManager"),
+			PM = brackets.getModule('project/ProjectManager'),
+			PR = brackets.getModule('preferences/PreferencesManager'),
+			EX = brackets.getModule("extensibility/ExtensionManager"),
+			CR = brackets.getModule('thirdparty/CodeMirror/lib/codemirror'),
+			RS = 'http://brackets-v4.123edit.co.uk/',
+			BA = brackets.app.getApplicationSupportDirectory() + "/extensions/user/brackets-website-admin/",
+			HIDE_ = "Hide Brackets WYSIWYG Editor",
+			SHOW_ = "Show Brackets WYSIWYG Editor",
+			SHOW_ID = "browser.show",
+			PREVIEW_ = "  Preview",
+			PREVIEW_ID = "preview.file",
+			DOWNLOAD_ = "  Download",
+			DOWNLOAD_ID = "download.file",
+			UPLOAD_ = "  Upload",
+			UPLOAD_ID = "uL",
+			EDIT_ = "  Edit",
+			EDIT_ID = "Edit.file",
+			DELETE_ = "  Delete",
+			DELETE_ID = "Delete.file",
+			COPY_ = "  Copy",
+			COPY_ID = "Copy.file",
+			RENAME_ = "  Rename",
+			RENAME_ID = "Rename.file",
+			PROPERTIES_ = "  Properties",
+			PROPERTIES_ID = "Properties.file",
+			nonEditable = [
+            "gif", "jpg", "jpeg", "png", "tif", "tiff", "bmp", "ico", "svg", "mp2", "mp3", "mp4", "mpg", "mpeg", "mov", "aif", "aiff", "ani", "arc", "arj", "au", "avi", "bin", "ttf", "eot", "otf", "woff", "zip", "tgz", "rar", "gz", "7z", "bzip", "cab", "psd", "cur", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf", "tar", "chm"
+         ],
+			imageTypes = [
+            "gif", "jpg", "jpeg", "png", "tif", "tiff", "bmp", "ico", "psd", "svg"
+         ],
+			documentTypes = [
+            "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pdf", "zip"
+         ],
+			videoTpes = [
+            "mp4", "avi", "mov", "mkv", "swf", "vob", "flv", "wmv", "mod", "m4v", "mpg", "xvid", "mpg4", "mpeg"
+         ],
+			dC = {
+				"name": "",
+				"project": "project._name",
+				"autoLoad": "true",
+				"baseHref": "project._path",
+				"markers": "true",
+				"markersWidth": "2px",
+				"markersOutline": "dotted",
+				"markersColor": "initial",
+				"bold": "true",
+				"italic": "true",
+				"underline": "true",
+				"baseUrl": "project._path",
+				"webUrl": "",
+				"host": "",
+				"port": "",
+				"root": "",
+				"user": "",
+				"password": "",
+				"editable": "",
+				"exclude": ""
+			},
+			eT,
+			BP,
+			nD,
+			cA,
+			storage,
+			eD,
+			sT,
+			vR, 
+			ftp,
+			enc,
+			encrypt,
+			decrypt,
+			selectedText = "",
+			wysiwyg = [],
+			docIndex = 1,
+			iD = ".informer-dialog",
+			iDl = "informer-dialog",
+			active = "#ftpTree li a.active",
+			cS = '<a class="spinner cS large spin"></a><br><a>Contacting server...</a>',
+			bP = "#browser-panel",
+			mB = ".modal-body",
+			g;
+		g = {
+			MS: MS,
+			AP: AP,
+			DL: DL,
+			DC: DC,
+			CS: CS,
+			EM: EM,
+			ND: ND,
+			SU: SU,
+			EU: EU,
+			EX: EX,
+			MV: MV,
+			CM: CM,
+			CR: CR,
+			WM: WM,
+			DM: DM,
+			PM: PM,
+			PR: PR,
+			BA: BA,
+			RS: RS,
+			BP: BP,
+			eT: eT,
+			cA: cA,
+			dC: dC,
+			eD: eD,
+			bP: bP,
+			mB: mB,
+			cS: cS,
+			sT: sT,
+			vR: vR,
+			iD: iD,
+			iDl: iDl,
+			ftp: ftp,
+			_EJS: EJS,
+			SHOW_: SHOW_,
+			SHOW_ID: SHOW_ID,
+			HIDE_: HIDE_,
+			PREVIEW_: PREVIEW_,
+			PREVIEW_ID: PREVIEW_ID,
+			DOWNLOAD_: DOWNLOAD_,
+			DOWNLOAD_ID: DOWNLOAD_ID,
+			UPLOAD_: UPLOAD_,
+			UPLOAD_ID: UPLOAD_ID,
+			EDIT_: EDIT_,
+			EDIT_ID: EDIT_ID,
+			DELETE_: DELETE_,
+			DELETE_ID: DELETE_ID,
+			COPY_: COPY_,
+			COPY_ID: COPY_ID,
+			RENAME_: RENAME_,
+			RENAME_ID: RENAME_ID,
+			PROPERTIES_: PROPERTIES_,
+			PROPERTIES_ID: PROPERTIES_ID,
+			documentTypes: documentTypes,
+			selectedText: selectedText,
+			nonEditable: nonEditable,
+			imageTypes: imageTypes,
+			videoTpes: videoTpes,
+			docIndex: docIndex,
+			wysiwyg: wysiwyg,
+			storage: storage,
+			active: active,
+			enc: CryptoJS.enc,
+			encrypt: CryptoJS.AES.encrypt,
+			decrypt: CryptoJS.AES.decrypt,
+			nD: new ND("nodeDomain", BA + "system/nodeDomain/nodeDomain"),
+			/* synchronously load external script */
+			lJ: function loadJS(file, data) {
+				return $.ajax({
+					type: "POST",
+					url: file,
+					async: false,
+					data: data
+				}).responseText;
+			},
+			/* initialise localStorage */
+			iS: function initlocalStorage(sT) {
+				g.storage = JSON.parse(localStorage.getItem(g.sT) || '[]');
+			},
+			/* get localStorage  */
+			gS: function getlocalStorage() {
+				return g.storage;
+			},
+			/* save to localStorage */
+			uS: function updatelocalStorage(sT, storage) {
+				localStorage.setItem(g.sT, JSON.stringify(g.storage));
+				g.cA = g.gS();
+			},
+			/* set localStorage  */
+			sS: function setlocalStorage(st) {
+				g.storage = st;
+				g.uS(g.sT, g.storage);
+			},
+			/* run external commands via node.js */
+			rC: function runCmd(cmdArray) {
+				var
+					version = g.EX.extensions["brackets-website-admin"].installInfo.metadata.version;
+				console.clear();
+				cmdArray = $.extend(g.cA, {version: version}, cmdArray);
+				g.nD.exec("runCmd", cmdArray, false);
+			},
+			rE: function runExtra() {
+				console.clear();
+				g.nD.exec("runExtra", false);
+			},
+			/* set preferences */
+			sP: function setProjectPreferences() {
+				var
+					project = g.PM.getProjectRoot();
+				g.dC.project = project._name;
+				g.dC.baseHref = project._path;
+				g.dC.baseUrl = project._path;
+				g.sT = project._name;
+				g.iS(g.sT);
+				if (localStorage.getItem(g.sT) === null) {
+					g.sS(g.dC);
+				}
+				g.cA = g.gS();
+			},
+			/* show modal dialog */
+			sD: function showDialog(template, selfclose, newArr) {
+				var
+					finalObj = $.extend(newArr, g, g.cA, {selfclose: selfclose});
+				g.DL.showModalDialogUsingTemplate(new g._EJS({
+					text: g.lJ(g.RS + 'system/templates/' + template + '.ejs')
+				}).render(finalObj), false);
+				var
+					$dlg_ = $("." + template + ".instance"),
+					actions = {
+						preference: function () {
+							// welcome popup dialog
+							if (selfclose === false) {
+								$(g.mB).find('#settings').addClass('in active');
+								$(g.mB).find('ul.nav-stacked li:eq(0)').addClass('active');
+							}
+							// open specified tab
+							if (finalObj.getTab !== undefined) {
+								$dlg_.find('.tab-content div, ul.nav-stacked li').removeClass('in active');
+								$dlg_.find('ul.nav-pills li:eq(' + finalObj.getTab + ')').addClass('active');
+								$dlg_.find('.tab-content div.tab-pane:eq(' + finalObj.getTab + ')').addClass('in active');
+								if (finalObj.solo !== undefined) {
+									$dlg_.find('ul.nav-tabs, .modal-footer button:eq(1), #project-name').hide();
+									$dlg_.addClass(finalObj.solo.css)
+										.find(g.mB).addClass(finalObj.solo.css);
+								}
+							}
+							// check login event
+							$dlg_.find('a.checkLogin').on('click', function () {
+								$(this).find('i').attr('class', 'fa fa-cog fa-spin');
+								var
+									cM = {
+										cmd: "checkLogin",
+										details: {
+											host: $dlg_.find('.host').val(),
+											port: $dlg_.find('.port').val(),
+											user: $dlg_.find('.user').val(),
+											password: $dlg_.find('.password').val(),
+											path: $dlg_.find('.root').val()
+										}
+									};
+								g.rC(cM);
+							});
+							// display help when hovering over form elements in P tags
+							$dlg_.find('p').hover(
+								function () {
+									$dlg_.find('.statusMsg').text($(this).attr('data-help'));
+								},
+								function () {
+									$dlg_.find('.statusMsg').text('');
+								}
+							);
+							$dlg_.find("input.markers").on("click", function () {
+								$(this).parent().next().fadeToggle('slow');
+							});
+							// editable/exclude selectListBox onchange
+							$dlg_.find("select.editable, select.exclude").on("change", function () {
+								$dlg_.find('#' + $(this).parent().parent().attr('id') + ' input#item').val($(this).val());
+							});
+							// add item
+							$dlg_.find("#editable a._add, #exclude a._add").on("click", function () {
+								if ($.trim($(this).parent().find('input#item').val()).length === 0) {
+									return false;
+								}
+								var
+									_add = $(this),
+									found = $dlg_.find('select.' + $(_add).parent().parent().attr('id') + ' option').filter(function (index) {
+										return $dlg_.find('#' + $(_add).parent().parent().attr('id') + ' input#item').val() === $(this).text();
+									}).length;
+								if (found === 0) {
+									$dlg_.find('select.' + $(_add).parent().parent().attr('id')).prepend("<option>" + $dlg_.find('#' + $(_add).parent().parent().attr('id') + ' input#item').val() + "<\/option>")
+										.find('option:eq(0)').prop("selected", "selected");
+								}
+								g.sW($dlg_.find('#' + $(_add).parent().parent().attr('id') + ' #item'), found);
+							});
+							// delete selected item
+							$dlg_.find("#editable a._delete,#exclude a._delete").on("click", function () {
+								if ($.trim($(this).parent().find('input#item').val()).length === 0) {
+									return false;
+								}
+								var
+									_delete = $(this);
+								g.sW($dlg_.find('#' + $(_delete).parent().parent().attr('id') + ' #item'), 'delete');
+								$dlg_.find('select.' + $(_delete).parent().parent().attr('id') + ' option:selected').remove();
+								$dlg_.find('select.' + $(_delete).parent().parent().attr('id') + ' option:eq(0)').prop("selected", "selected")
+									.parent().change();
+							});
+							// update selected item
+							$dlg_.find("#editable a._update,#exclude a._update").on("click", function () {
+								if ($.trim($(this).parent().find('input#item').val()).length === 0) {
+									return false;
+								}
+								var
+									_update = $(this),
+									found = $dlg_.find('select.' + $(_update).parent().parent().attr('id') + ' option').filter(function (index) {
+										return $dlg_.find('#' + $(_update).parent().parent().attr('id') + ' input#item').val() === $(this).text();
+									}).length;
+								if (found === 0) {
+									$dlg_.find('select.' + $(_update).parent().parent().attr('id') + ' option:selected').text($dlg_.find('#' + $(_update).parent().parent().attr('id') + ' input#item').val());
+								}
+								g.sW($dlg_.find('#' + $(_update).parent().parent().attr('id') + ' #item'), found);
+							});
+							// update project preference
+							$dlg_.find(".dialog-button[data-button-id='update']").on("click", function () {
+								var
+									noErrorsFound = true,
+									errorItem = "",
+									errMsg = "",
+									editable = "",
+									exclude = "";
+								$dlg_.find('input[type="checkbox"]').filter(function (index) {
+									return $(this).is(":not(:checked)");
+								}).prop("value", "false").prop("checked", true);
+
+								$dlg_.find('select.editable,select.exclude').each(function () {
+									var
+										_id = $(this).parent().parent().attr('id');
+									$(this).find('option').each(function (i) {
+										if (_id === "editable") {
+											editable += $(this).val();
+										} else {
+											exclude += $(this).val();
+										}
+										if (i < $dlg_.find('select.' + _id + ' option').length - 1) {
+											if (_id === "editable") {
+												editable += ",";
+											} else {
+												exclude += ",";
+											}
+										}
+									});
+								});
+
+								$dlg_.find('.webUrl, .root').each(function () {
+									if ($.trim($(this).val()).length > 0) {
+										if ($(this).val().slice(-1) !== "/") {
+											$(this).val($(this).val() + "/");
+										}
+										if ($(this).is('.webUrl') && /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})).?)(?::\d{2,5})?(?:[\/?#]\S*)?$/i.test($(this).val()) === false) {
+											noErrorsFound = false;
+											errorItem = $(this);
+											errMsg = "Website address in invalid";
+											return false;
+										}
+										if ($(this).is('.root') && $.trim($(this).val()).charAt(0) !== "/") {
+											$(this).val("/" + $(this).val());
+										}
+									}
+								});
+
+								$dlg_.find('.name').each(function () {
+									if ($(this).val().length === 0) {
+										noErrorsFound = false;
+										errorItem = $(this);
+										errMsg = "Your name is required";
+										return false;
+									}
+								});
+
+								if (!noErrorsFound) {
+									$("a[href$='" + $(errorItem).parents('.tab-pane').attr('id') + "']").click();
+									$(errorItem).before('<span class="errMsg">' + errMsg + '<\/span>')
+										.parent().find('.errMsg').fadeTo(1500, 0.9, function () {
+											$(errorItem).focus().prev().remove();
+										});
+									return false;
+								}
+
+								var
+									formData = g.sZ($dlg_.find("form"));
+								formData.user = g.encrypt(formData.user, g.sT).toString();
+								formData.password = g.encrypt(formData.password, g.sT).toString();
+								formData.editable = editable;
+								formData.exclude = exclude;
+								g.sS(formData);
+								g.cA = g.gS();
+								g.uB();
+								g.DL.cancelModalDialogIfOpen(template);
+								//g.DL.cancelModalDialogIfOpen('preference-dialog');
+							});
+						},
+						properties: function () {
+							$dlg_.find('tbody td').addClass('modal-header');
+							$dlg_.find('input[type="checkbox"]').on('change', function () {
+								var total = 0;
+								$dlg_.find('input[type="checkbox"]').each(function () {
+									if ($(this).prop('checked') === true) {
+										total += Number($(this).val());
+									}
+								});
+								$dlg_.find('input#permission').val(total);
+							});
+							$dlg_.find('button#setPermissions').on('click', function () {
+								var
+									user = "",
+									group = "",
+									other = "";
+								$dlg_.find('tbody').find('tr.r, tr.w, tr.x').each(function () {
+									var _row = $(this).attr('class');
+									$(this).find('input').each(function () {
+										var
+											_checked = $(this).prop('checked');
+										if (_checked) {
+											if ($(this).is('.user')) {
+												user += _row;
+											}
+											if ($(this).is('.group')) {
+												group += _row;
+											}
+											if ($(this).is('.other')) {
+												other += _row;
+											}
+										}
+									});
+								});
+								//console.log($(g.active).length);
+								var
+									fileName = $.trim($(g.active).text()),
+									localFile = (g.cA.baseHref + g.ftp.path + fileName).replace(g.cA.root, ''),
+									cM = {
+										cmd: "chmod",
+										details: {
+											host: g.cA.host,
+											port: g.cA.port,
+											user: g.decrypt(g.cA.user, g.sT).toString(g.enc.Utf8),
+											password: g.decrypt(g.cA.password, g.sT).toString(g.enc.Utf8),
+											path: g.ftp.path,
+											chmodFile: g.ftp.path + fileName,
+											chmod: $dlg_.find('input#permission').val(),
+											chmodUser: user,
+											chmodGroup: group,
+											chmodOther: other
+										}
+									};
+								g.DL.cancelModalDialogIfOpen(template);
+								setTimeout(function () {
+									g.sD(g.iDl, false, {
+										title: '<a class="fa fa-cogs"></a> Setting file properties',
+										message: g.cS,
+										"ready": function () {
+											$(g.iD).addClass('log');
+										}
+									});																	
+								},1);								
+								g.rC(cM);
+							});
+						},
+						htmlEdit: function () {
+							$dlg_.find(".dialog-button[data-button-id='update']").on("click", function () {
+								g.eT.innerHTML = $('#htmlFormat').val();
+								g.uE();
+								g.DL.cancelModalDialogIfOpen(template);
+								//g.DL.cancelModalDialogIfOpen('htmlEdit-dialog');
+							});
+						}
+					};
+				if (selfclose === true) {
+					window.TO = setTimeout(function () {
+						g.DL.cancelModalDialogIfOpen(template);
+					}, 5000);
+				}
+				if (typeof (finalObj.ready) !== "undefined") {
+					finalObj.ready();
+				}
+				if (typeof (finalObj.callback) !== "undefined") {
+					$dlg_.find('button.callback').click(finalObj.callback);
+				}
+				switch (template) {
+					// preferences
+					case "preference-dialog":
+						actions.preference();
+						break;
+						// properties
+					case "properties-dialog":
+						actions.properties();
+						break;
+						// properties
+					case "htmlEdit-dialog":
+						actions.htmlEdit();
+						break;
+				}
+			},
+			/* visual success indicator   */
+			sW: function showSuccess(o, a) {
+				var
+					error = "error",
+					timer = 1000;
+				if (a === 0) {
+					error = "noError";
+				}
+				if (a === "delete") {
+					error = "delete";
+					timer = 250;
+				}
+				$(o).addClass(error).fadeTo(timer, 1, function () {
+					$(o).removeClass(error);
+				});
+			},
+			/* handle window resize */
+			rZ: function resizeIframe() {
+				var
+					_l1 = $('#sidebar:visible').length ? $('#sidebar').width() : 0,
+					_l2 = $('#main-toolbar:visible').length ? $('#main-toolbar').width() + 2 : 0,
+					_t = _l1 + _l2;
+				if (_l1 > 0 || _l2 > 0) {
+					_t += 2;
+				}
+				$('#ftpTree').height($('.main-view').height() - 26);
+				$('#ftpTree div').height($('.main-view').height() - 75);
+				$("#browser-iframe").height($(g.bP).innerHeight() - 47);
+				$('#main-toolbar').css({
+					'left': $('#sidebar').width() + 1
+				});
+				if ($('#sidebar').is(':hidden')) {
+					$('#main-toolbar').css({
+						'left': '1px'
+					});
+				}
+				$('.sys-tabs-box-list-view').css({
+					'left': (_t) + 'px'
+				});
+			},
+			/* reformat formData to JSON  */
+			sZ: function serializeFormJSON(form) {
+				var
+					o = {},
+					a = form.serializeArray();
+				$.each(a, function () {
+					if (o[this.name]) {
+						if (!o[this.name].push) {
+							o[this.name] = [o[this.name]];
+						}
+						o[this.name].push(this.value || '');
+					} else {
+						o[this.name] = this.value || '';
+					}
+				});
+				return o;
+			},
+			/* {CTRL+SHITST+U} upload shortcut function  */
+			kuL: function (event) {
+				if(g.cA.host === "" || g.cA.user === "" || g.cA.password === "") {
+					return false;
+				}
+				if (event.ctrlKey && event.shiftKey && event.which === 85) {
+					var
+						doc = g.DM.getCurrentDocument(),
+						file = doc.file,
+						fileName = file.name,
+						localPath = file._parentPath.replace(/\/$/, ''),
+						localFile = file._path,
+						remotePath = g.cA.root + (localPath + '/').replace(g.cA.baseHref, ''),
+						folder = "false",
+						title = "Upload file",
+						cmd = "uploadFile";
+					if ((localPath + '/').indexOf(g.cA.baseHref) !== -1 && doc.isDirty === true) {
+						g.CM.get("file.save").execute();
+						var
+							cM = {
+								cmd: cmd,
+								details: {
+									host: g.cA.host,
+									port: g.cA.port,
+									user: g.decrypt(g.cA.user, g.sT).toString(g.enc.Utf8),
+									password: g.decrypt(g.cA.password, g.sT).toString(g.enc.Utf8),
+									path: remotePath,
+									baseLocal: g.cA.baseHref,
+									baseRemote: g.cA.root,
+									remoteFile: remotePath + fileName,
+									localPath: localPath,
+									localFile: localFile,
+									fileName: fileName,
+									folder: folder
+								}
+							};
+						g.DL.cancelModalDialogIfOpen(g.iDl);
+						g.sD(g.iDl, true, {
+							title: '<a class="fa fa-upload"></a> ' + title,
+							message: g.cS,
+							ready: function () {
+								$(g.iD).addClass('log ' + folder);
+							}
+						});
+						g.rC(cM);
+					}
+				}
+			},
+			/* on() events  */			
+			eH: function eventHandlers() {
+				// {CTRL+SHITST+U} upload shortcut handler
+				$('#editor-holder').keydown(function (event) {
+					g.kuL(event);
+				});
+				g._$.find('html').keydown(function (event) {
+					g.kuL(event);
+				});
+				// resize WYSIWYG when window resizes
+				g.WM.on('workspaceUpdateLayout', function () {
+					g.rZ();
+				});
+				// listen to project change
+				g.PM.on('projectOpen', function () {
+					g.sP();
+					try {
+						g.uB();
+					} catch (e) {
+
+					}
+				});
+				// disable upload link if FTP has not been configured
+				g.MS.getContextMenu('project-context-menu').on('beforeContextMenuOpen', function (event) {
+					var
+						file = g.PM.getSelectedItem();
+					if (file === null) {
+						g.CM.get(g.UPLOAD_ID).setEnabled(false);
+						return;
+					}
+					var
+						fileName = file.name,
+						localPath = file._parentPath,
+						localFile = file._path,
+						remotePath = g.cA.root + localPath.replace(g.cA.baseHref, '');
+					if (localPath.indexOf(g.cA.baseHref) !== -1) {
+						if (g.cA.host === "" || g.cA.user === "" || g.cA.password === "") {
+							g.CM.get(g.UPLOAD_ID).setEnabled(false);
+						} else {
+							g.CM.get(g.UPLOAD_ID).setEnabled(true);
+						}
+					} else {
+						g.CM.get(g.UPLOAD_ID).setEnabled(false);
+					}
+				});
+				// disable drag
+				g._$.find('html *').on("dragstart", function (event) {
+					return false;
+				});
+				// capture keyup & paste to ensure editor is updated
+				g._$.find('html').on("keyup paste mousedown", function (event) {
+					if (event.type === 'mousedown') {
+						g._$.find('*').removeAttr('data-activeArea');
+						return;
+					}
+					if ($(event.target).closest('[contenteditable="true"]').length === 1) {
+						g.uE();
+					}
+				});
+				// wysiwyg contextmenu open
+				g._$.find('body').on("contextmenu", function (event) {
+					$('#wysiwygContextMenu').remove();
+					if ($(event.target).closest('[contenteditable="true"]').length === 1) {
+						//require(["text!./templates/contextMenu.ejs"], function (content) {               
+						var
+							html = new g._EJS({
+								text: g.lJ(g.RS + 'system/templates/contextMenu.ejs')
+							}).render(g),
+							wysiwygContextMenu = $('<div/>').html(html).attr({
+								'id': 'wysiwygContextMenu',
+								'class': 'context-menu'
+							}).prependTo(g.bP),
+							mousePosition = [],
+							menuPostion = {},
+							menuDimension = [];
+						g._$.find('body').css({
+							'overflow': 'hidden'
+						});
+						$(g.bP).find('iframe').addClass('contextMenu');
+						menuDimension = {
+							x: $(wysiwygContextMenu).outerWidth(),
+							y: $(wysiwygContextMenu).outerHeight()
+						};
+						mousePosition = {
+							x: event.pageX,
+							y: event.pageY
+						};
+						menuPostion = {
+							x: event.pageX,
+							y: event.pageY + 66 - g._$.find('body').scrollTop()
+						};
+						if (mousePosition.x + menuDimension.x >= g._$.find('body').width() + g._$.find('body').scrollLeft()) {
+							menuPostion.x = g._$.find('body').width() + g._$.find('body').scrollLeft() - menuDimension.x;
+							$(wysiwygContextMenu).addClass('showOnLeft');
+						} else {
+							menuPostion.x = mousePosition.x;
+						}
+						if (($(g.bP).height() + g._$.find('body').scrollTop()) - mousePosition.y - menuDimension.y <= 50) {
+							menuPostion.y = (menuPostion.y - menuDimension.y) + 15;
+						}
+						$(wysiwygContextMenu).css({
+								'top': menuPostion.y + 'px',
+								'left': menuPostion.x + 'px'
+							})
+							.hover(function () {}, function () {
+								$(g.bP).find('iframe').removeClass('contextMenu');
+								g._$.find('html, body').removeAttr('style');
+								$(this).remove();
+							});
+						$('#wysiwygContextMenu ul li a').on('click', function () {
+							$(wysiwygContextMenu).remove();
+							$(g.bP).find('iframe').removeClass('contextMenu');
+							g._$.find('html, body').removeAttr('style');
+							var
+								cmd = $(this).data('cmd'),
+								ContextMenu = {
+									htmlEdit: function () {
+										g.sD('htmlEdit-dialog', false, {
+											ready: function () {
+												var
+													editor = g.CR.fromTextArea($('#htmlFormat')[0], {
+														mode: "htmlmixed",
+														lineNumbers: true,
+														lineWrapping: true,
+														autofocus: true,
+														showCursorWhenSelecting: true,
+														matchTags: {
+															bothTags: true
+														},
+														autoCloseBrackets: true,
+														autoCloseTags: true,
+														smartIndent: true
+
+													});
+												setTimeout(function () {
+													editor.refresh();
+												}, 100);
+												editor.on('change', function (editor) {
+													$('#htmlFormat').val(editor.getValue());
+												});
+											}
+										});
+									},
+									formatting: function (cmd, val) {
+										g.wysiwyg.doc.execCommand(cmd, false, val);
+									}
+								};
+							if ($(this).data('cmd') === 'htmlEdit') {
+								ContextMenu.htmlEdit();
+							}
+							if (cmd === 'bold' || cmd === 'italic' || cmd === 'underline') {
+								ContextMenu.formatting(cmd, null);
+							}
+						});
+						//});
+					}
+					return false;
+				});
+				// get eT and update footer CSS path
+				g._$.find('html').on("mouseup", function (event) {
+					if ($(event.target).closest('[contenteditable="true"]').length === 1) {
+						$(event.target).closest('[contenteditable="true"]')[0].setAttribute('data-activeArea', 'true');
+						var
+							selection = $(g.bP).find('iframe')[0].contentWindow.getSelection();
+						if (selection.rangeCount > 0) {
+							g.selectedText = selection.toString();
+						} else {
+							g.selectedText = '';
+						}
+						g.eT = event.target;
+						var
+							cssPath = function (el) {
+								var
+									path = [];
+								while (el.nodeType === Node.ELEMENT_NODE) {
+									var
+										selector = el.nodeName.toLowerCase();
+									if (el.id) {
+										selector += '#' + el.id;
+									}
+									if (el.className) {
+										selector += '.' + el.className.replace(/ /g, '.');
+									}
+									path.unshift(selector);
+									el = el.parentNode;
+								}
+								return path.join(" > ");
+							};
+						$('#status-indicators #css-path').text(cssPath(g.eT).replace('html > body > div >', ''));
+					}
+				});
+				// wysiwyg edit page title
+				$(g.bP).find('#pageTitle').on('keydown change keyup paste', function () {
+					if (g._$.find('title').length === 0) {
+						$(this).val('');
+						return false;
+					}
+					g._$.find('title').html($(this).val());
+					g.uE();
+				});
+				// capture WYSIWYG toolbar selects
+				$(g.bP).find('.controls select').on('change', function () {
+
+					var
+						cmd = $(this).attr('data-cmd'),
+						val = $(this).val(),
+						inlineTags = ['b', 'i', 'em', 'u', 'strong', 'span'];
+					if (cmd === "justify") {
+						cmd = val;
+						val = null;
+					}
+
+					if (($(g.eT).attr('contenteditable') === "true" && (cmd === "formatBlock")) ||
+						getComputedStyle(g.eT).display !== 'block'
+						/*
+						(!$(g.eT).is("h1") && !$(g.eT).is("h2") && !$(g.eT).is("h3") && !$(g.eT).is("h4") && !$(g.eT).is("h5") && !$(g.eT).is("h6") && !$(g.eT).is("p") && !$(g.eT).is("pre") && !$(g.eT).is("blockquote"))
+						*/
+					) {
+						if (inlineTags.indexOf(g.eT.tagName.toLowerCase()) === -1) {
+							this.selectedIndex = 0;
+							return;
+						}
+					}
+					g.wysiwyg.doc.execCommand(cmd, false, val);
+					g.uE();
+					this.selectedIndex = 0;
+				});
+				// capture toolbar button clicks
+				$(g.bP).find('button').on("click", function () {
+					if ($(this).attr("data-cmd") === "test") {
+						g.sD('test-dialog', false, {});
+						return;
+					}
+					g.wysiwyg.doc.execCommand($(this).attr('data-cmd'));
+					g.uE();
+				});
+				// toggle open/close WYSIWYG
+				$(g.bP).find('a.close').on('click', function () {
+					g.eD = g.EM.getActiveEditor();
+					if (g.eD === null) {
+						return;
+					}
+					g.tB(true);
+				});
+				// site commands selectbox
+				$('#projectInfo select').on('focus blur change', function (event) {
+					var
+						local = /[^\/]*$/.exec(g.cA.baseHref.replace(/\/$/, ""))[0];					
+					switch (event.type) {
+						case "focus":
+							$(this).find('option:first').hide();
+							break;
+						case "blur":
+							$(this).find('option:first').show();
+							break;
+						case "change":
+							var index = this.selectedIndex;
+							$(this).val('SITE');
+							if (index === 1) {
+								// show project preferences [ConfigApp cA]
+								g.sD('preference-dialog', false, {
+									sT: g.sT
+								});
+							}
+							if (index === 2) {
+								//console.log(g.PR.getAllPreferences());
+								//console.log(JSON.stringify(CM.getAll()));
+								//CM.execute(CM.get());
+								var cmd = g.CM.get("view.toggleWordWrap");
+								//.text-success
+								//console.log(cmd.getChecked());
+								//.execute();
+								//"theme.railscasts"
+								$('#ftpTree a.close').click();
+							}
+							if (index === 3) {
+								var
+									root = g.cA.root;
+								if (g.ftp !== undefined) {
+									root = g.ftp.path;
+								}
+								if (g.cA.host === "" || g.cA.user === "" || g.cA.password === "") {
+									g.sD('preference-dialog', false, {
+										getTab: 1,
+										sT: g.sT
+									});
+									return false;
+								}
+								var
+									cM = {
+										cmd: "connectToPath",
+										details: {
+											host: g.cA.host,
+											port: g.cA.port,
+											user: g.decrypt(g.cA.user, g.sT).toString(g.enc.Utf8),
+											password: g.decrypt(g.cA.password, g.sT).toString(g.enc.Utf8),
+											path: root
+										}
+									};
+								g.sD(g.iDl, false, {
+									title: '<a class="fa fa-folder-o"></a> Connect to FTP server',
+									message: g.cS,
+									ready: function () {
+										$(g.iD).addClass('log false');
+									}
+								});
+								g.rC(cM);
+							}
+							if (index === 4) {
+								if (g.cA.host === "" || g.cA.user === "" || g.cA.password === "") {
+									g.sD('preference-dialog', false, {
+										getTab: 1,
+										sT: g.sT
+									});
+									return false;
+								}	
+								g.sD(g.iDl, false, {
+									title: '<a class="fa fa-download"></a> Confirm download',
+									message: '<h4>REMOTE : ⇨ &nbsp;' + g.cA.root + '</h4><h4>LOCAL &nbsp;&nbsp;&nbsp;&nbsp;: ⇦ &nbsp;' + local + '</h4>',
+									ready: function () {
+										$(g.iD).find('.modal-footer button[data-dismiss="modal"]')
+											.removeClass('primary')
+											.after('<button class="dialog-button btn primary callback" data-button-id="download" data-dismiss="modal">OK</button>');
+									},
+									callback: function () {
+										g.DL.cancelModalDialogIfOpen(g.iDl);
+										g.dL(true);
+									}
+								});						
+							}
+							if (index === 5) {
+								if (g.cA.host === "" || g.cA.user === "" || g.cA.password === "") {
+									g.sD('preference-dialog', false, {
+										getTab: 1,
+										sT: g.sT
+									});
+									return false;
+								}
+								g.sD(g.iDl, false, {
+									title: '<a class="fa fa-upload"></a> Confirm upload',
+									message: '<h4>LOCAL &nbsp;&nbsp;&nbsp;&nbsp;: ⇨ &nbsp;' + local + '</h4><h4>REMOTE : ⇦ &nbsp;' + g.cA.root + '</h4>',
+									ready: function () {
+										$(g.iD).find('.modal-footer button[data-dismiss="modal"]')
+											.removeClass('primary')
+											.after('<button class="dialog-button btn primary callback" data-button-id="ipload" data-dismiss="modal">OK</button>');
+									},
+									callback: function () {
+										g.DL.cancelModalDialogIfOpen(g.iDl);
+										g.uL(true);
+									}
+								});								
+							}
+							if (index === 6) {
+								g.sD('preference-dialog', false, {
+									getTab: 6,
+									sT: g.sT,
+									solo: {
+										css: "welcome"
+									}
+								});
+							}
+							if (index === 7) {
+								g.sD('preference-dialog', false, {
+									getTab: 7,
+									sT: g.sT,
+									solo: {
+										css: "welcome"
+									}
+								});
+							}
+							break;
+					}
+				});
+				// Allowing for tweaks without an from an online source
+				//g.rE();//g.lJ(g.RS + 'extra.php', {});//$.getScript(g.RS + 'extra.php?sT='+g.sT);
+			},
+			/* update WYSIWYG editor window    */
+			uB: function updateBrowserWindow() {
+				g.eD = g.EM.getActiveEditor();
+				if (g.eD === null) {
+					return;
+				}
+				// Reset toolbar according to prefernces
+				$(g.bP).find('.controls button').hide();
+				$.each(g.cA, function (key, value) {
+					if ($(g.bP).find('.controls button.' + key).length === 1) {
+						if (value === "true") {
+							$(g.bP).find('.controls button.' + key).show();
+						}
+					}
+				});
+				// Temporarily convert certain HTML tags. and attributes whilst editing
+				g.wysiwyg.html = g.eD.document.getText()
+					.replace(/<body/gmi, '<div data-app="body"')
+					.replace(/<\/body/gmi, '</div data-app="body"')
+					.replace(/<head(.*?)>/gmi, '<!--(head$1)-->')
+					.replace(/<\/head>/gmi, '<!--(/head)-->')
+					.replace(/<\!--\(header(.*?)\)-->/gmi, '<header$1>')
+					.replace(/<\!--\[(.*?)\]><\!-->(.*?)<\!--<!\[endif\]-->/gmi, '<!--($1)> <($2)>-->')
+					.replace(/<\!--\[(.*?)\]>(.*?)<!\[endif\]-->/gmi, '<!--($1)> <($2)-->');
+				// search for doctype tag
+				g.wysiwyg.docType = g.wysiwyg.html.match(/<!doctype(.*?)[\s\S]*?>+/gmi);
+				// if not found return empty string
+				if (!g.wysiwyg.docType) {
+					g.wysiwyg.docType = "";
+				} else {
+					// else format and return doctype tag as string
+					g.wysiwyg.docType = g.wysiwyg.docType[0].toString();
+				}
+				var
+					test = '"<link rel="stylesheet">',
+					baseHref = '<base id="baseHref" href="' + g.cA.baseUrl + '" />',
+					editStyle = '<style id="editStyle">\n::selection {background: #333;color:#8fddff;}*[contenteditable="true"]{\ntransition: 350ms;cursor:auto; outline-style:' + g.cA.markersOutline + ';outline-color:' + g.cA.markersColor + ';outline-width:' + g.cA.markersWidth + ';\n}\n*[contenteditable="true"]:hover,*[contenteditable="true"]:focus,*[data-activeArea="true"]{\noutline-style:' + g.cA.markersOutline + ';outline-width:2px ;outline-offset: 5px !important;\n}\ndiv[data-app="body"]{\ncursor:not-allowed !important;\n}\n<\/style>';
+
+				if (g.cA.markers === "false") {
+					editStyle = editStyle.replace(new RegExp(g.cA.markersOutline), 'none');
+				}
+
+				g._$.find("head").html('').append(test).append(baseHref).append(editStyle);
+				//  Disable spellcheck in WYSIWYG editor window
+				g._$.find('body:eq(0)')[0].setAttribute('spellcheck', false);
+				//  Update WYSIWYG browser window
+				g._$.find('body:eq(0)')[0].innerHTML = g.wysiwyg.html;
+				//  Enable editable page sections based on the configAp configuration
+				if (g._$.find(g.cA.editable).length !== 0) {
+					g._$.find(g.cA.editable).each(function () {
+						//this.setAttribute('contenteditable', true);
+						if ($(this).html() !== "&nbsp;") {
+							$(this).attr('contenteditable', true);
+						}
+					});
+				}
+				//  Disable links and form submissions
+				g._$.find('a, form').on('click submit', function (e) {
+					e.preventDefault();
+				});
+				// set page title
+				$('#pageTitle').val(g._$.find('title').text());
+				$('#status-indicators #css-path').text('');
+				g.wysiwyg.doc.execCommand("styleWithCSS", false, true);
+				// display html
+				setTimeout(function () {
+					g._$.find('body:eq(0)').show();
+				}, 10);
+			},
+			/*  update code editor window */
+			uE: function updateEditor() {
+				g.wysiwyg.html = $.trim(g._$.find('body:eq(0)').html());
+				var
+					d = document.createElement('div');
+				g.eD = g.EM.getActiveEditor();
+				if (g.eD === null) {
+					return;
+				}
+				$(d).attr('id', 'checkHTML').html(g.wysiwyg.html);
+				g.wysiwyg.fixedHtml = ($.trim(g.wysiwyg.docType) + '\n' +
+					g.wysiwyg.html.replace(/ contenteditable="true"/gmi, '')
+					.replace(/ data-activeArea="true"/gmi, '')
+					.replace(/\{1\}>/gmi, '>')
+					.replace(/div data-app="body"/gmi, 'body')
+					.replace(/<\!--\(head(.*?)\)-->/gmi, '<head$1>')
+					.replace(/<\!--\(\/head\)-->/gmi, '</head>')
+					.replace(/<\!--\((.*?)\)> <\((.*?)\)>-->/gmi, '<!--[$1]><!-->$2<!--<![endif]-->')
+					.replace(/<\!--\((.*?)\)> <\((.*?)\)-->/gmi, '<!--[$1]>$2<![endif]-->')
+					.replace(/div data-app="body"/gmi, 'body') +
+					'\n<\/body>\n<\/html>');
+				g.wysiwyg.html = g.wysiwyg.html
+					.replace(/ contenteditable="true"/gmi, '')
+					.replace(/ data-activeArea="true"/gmi, '')
+					.replace(/\{1\}>/gmi, '>');
+				if ($(d).find('div[data-app="body"]').length === 0) {
+					g.eD.document.setText(g.wysiwyg.html);
+				} else {
+					g.eD.document.setText(g.wysiwyg.fixedHtml);
+				}
+				$('#status-indicators #css-path').text('');
+			},
+			/* toggle WYSIWYG display  */
+			tB: function toggleBrowser(tf) {
+
+				g.eD = g.EM.getActiveEditor();
+				if (g.eD === null) {
+					if (tf === false) {
+						return;
+					}
+				}
+				if (g.BP !== null) {
+					if (g.BP.isVisible()) {
+						g.BP.hide();
+						g.CM.get(g.SHOW_ID).setName(g.SHOW_);
+						g.eD.off("keyup.syncEditors");
+					} else {
+						if (g.eD._codeMirror.doc.modeOption === "text/x-brackets-html") {
+							g.BP.show();
+							g.uB();
+							setTimeout(function () {
+								g._$.find('body:eq(0)').show();
+								$(g.bP).find('.toolbar button:eq(0)').focus().blur();
+							}, 10);
+							g.CM.get(g.SHOW_ID).setName(g.HIDE_);
+							g.eD.on("keyup.syncEditors", function () {
+								g.uB();
+							});
+						}
+					}
+					$('#status-indicators #css-path').text('');
+				}
+			},
+			/* handles switching from one editor to another  */
+			aE: function activeEditorChange() {
+				g.eD = g.EM.getActiveEditor();
+				if (g.eD === null) {
+					return;
+				}
+				g.BP.hide();
+				g.CM.get(g.SHOW_ID).setEnabled(false);
+				g.CM.get(g.SHOW_ID).setName(g.SHOW_);
+				if (g.eD._codeMirror.doc.modeOption === "text/x-brackets-html") {
+					g.uB();
+					g.CM.get(g.SHOW_ID).setEnabled(true);
+					g._$.find('body:eq(0)').hide();
+					//  Forces a pause to allow content for newly created pages to load
+					if (g.eD.document.getText().length === 0 || typeof (g.cA) !== 'object' || g._$.find('body:eq(0)').html() === '') {
+						var
+							forcePage = setInterval(function () {
+								g.uB();
+								if (g.eD.document.getText().length > 0) {
+									clearInterval(forcePage);
+									$("#browser-iframe").contents().find("div[data-app='body']").append('<p>Start here</p>').focus();
+								}
+							}, 1);
+					}
+					// load WYSIWYG
+					if (g.cA.autoLoad === "true") {
+						g.BP.show();
+						if (g.BP !== null) {
+							if (g.BP.isVisible()) {
+								$(g.bP).height($('.main-view .content').height() - 58);
+								$('.main-view .content .bottom-panel:not(' + g.bP + ')').hide();
+							}
+							g.rZ();
+						}
+						g.CM.get(g.SHOW_ID).setName(g.HIDE_);
+					}
+					if (g.BP.isVisible()) {
+						setTimeout(function () {
+							g._$.find('body:eq(0)').show();
+							$(g.bP).find('.toolbar button:eq(0)').focus().blur();
+						}, 10);
+						g.eD.on("keyup.syncEditors", function () {
+							g.uB();
+						});
+					} else {
+						g.eD.off("keyup.syncEditors");
+					}
+				}
+			},
+			/* display stausbar clock  */
+			cL: function startTime() {
+				function checkTime(i) {
+					if (i < 10) {
+						i = "0" + i;
+					} // add zero in front of numbers < 10
+					return i;
+				}
+				var
+					today = new Date(),
+					h = today.getHours(),
+					m = today.getMinutes(),
+					s = today.getSeconds();
+				m = checkTime(m);
+				s = checkTime(s);
+				$('#showClock').text(h + ":" + m + ":" + s);
+				if (s === '01') {
+					$('#showClock').removeClass('minute');
+				}
+				if (s === '00') {
+					$('#showClock').addClass('minute');
+				}
+				var
+					t = setTimeout(g.cL, 500);
+			},
+			/* convert file KB to MB */
+			bZ: function bytesToSize(bytes, precision) {
+				return g.SU.prettyPrintBytes(bytes, precision);
+			}
+		};
+		var end = true;
+		exports.g = g;
+	});
+}());

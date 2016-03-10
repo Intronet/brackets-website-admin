@@ -1,0 +1,321 @@
+<% 
+	/* Setup some variables for the template to usee */
+var
+	ExtensionManager = brackets.getModule("extensibility/ExtensionManager"),
+	mData = $g.EX.extensions["brackets-website-admin"].installInfo.metadata,
+	version = parseInt((mData.version).replace(/\./g,''),10);
+
+	/* This is only available to the dev ip address */
+	if (typeof(dev) !== 'undefined') {
+		if(dev === true){
+			// code goes here
+		}
+	}
+	// End
+%>
+
+
+<div class="preference-dialog modal<% if (typeof(welcome) !== 'undefined'){ %> welcome<% } %>"
+<% if (typeof(welcome) !== 'undefined'){ %> style="width:435px"<% } %>>
+   <div class="modal-header">
+      <a href="#" class="close" data-dismiss="modal">×</a>
+      <h1 class="dialog-title"><a class="spinner iL _fa _fa-html5"></a> Brackets Website Admin </h1>
+   </div>
+   <div class="modal-body<% if (typeof(welcome) !== 'undefined'){ %> welcome<% } %>">
+      <div class="form-horizontal">
+         <form action="javascript:;" class="control-group">
+            <input type="hidden" name="project" value="<%= project %>">
+            <input class="baseHref" name="baseHref" type="hidden" value="<%= baseHref %>">
+				
+            <% if (typeof(selfclose) !== 'undefined') { 
+						if(selfclose === false)	{ %>
+				<a id="project-name">project : <%= project %></a>
+				<% }} %>
+
+				<% if (typeof(welcome) === 'undefined') { %>
+            <ul class="nav nav-pills nav-stacked modal-header">
+               <li><a data-toggle="tab" href="#settings">Local</a></li>
+               <li><a data-toggle="tab" href="#ftpSettings">Remote</a></li>
+               <li><a data-toggle="tab" href="#toolbar">Toolbar</a></li>
+               <li><a data-toggle="tab" href="#editable">Editable</a></li>
+               <li><a data-toggle="tab" href="#exclude">Exclude</a></li>
+               <li><a data-toggle="tab" href="#help">Help?</a></li>
+               <li><a data-toggle="tab" href="#about">About</a></li>
+            </ul>
+            <% } %>
+
+				<div class="tab-content">
+					
+					<div id="settings" class="tab-pane fade">
+                  <h4>Local Settings</h4>
+                  <label class="control-label">Your name:</label>
+                  <p data-help="Enter your full name" class="controls">
+                     <input placeholder="Enter your full name" class="name" name="name" type="text" value="<%= name %>">
+                  </p>
+
+                  <label class="control-label">base href:</label>
+                  <p data-help="Select the base URL the WYSIWYG will serve CSS and images from" class="controls">
+                     <select class="baseUrl" name="baseUrl">
+                        <%
+                                var html="";
+                                var selected="";
+                                var baseFrom = [baseHref,webUrl,baseUrl];
+                                baseFrom.forEach(function(value,index) {
+                                    if(value == baseUrl){
+                                        selected = " selected";
+                                    }
+                                    html+= "<option" + selected + ">" + value + "<\/option>";
+                                    selected="";
+                                });
+                             %>
+                           <%= html %>
+                     </select>
+                  </p>
+
+                  <label class="control-label">WYSIWYG editior:</label>
+                  <p data-help="Auto load the WYSIWYG editor for HTML files" class="controls">
+                     <% var checked = ""; if(autoLoad === "true" ) {checked = " checked";} %>
+                        <input class="autoLoad" name="autoLoad" type="checkbox" data-value="<%= autoLoad %>" value="true" <%= checked %>>
+                  </p>
+                  
+                  <label class="control-label">Markers:</label>
+                  <p data-help="Display a visual outline surrounding the editable sections contained in the webpage" class="controls">
+                     <% var checked = ""; h = "noShow" ; if(markers === "true" ) {checked = " checked"; h = ""} %>
+                        <input class="markers" name="markers" type="checkbox" data-value="<%= markers %>" value="true" <%= checked %>>
+                  </p>
+                  
+                  <div class="<%= h %>">
+                  <label class="control-label">Markers outline:</label>
+                  <p data-help="Set the outline style" class="controls">
+                     <select class="markersOutline" name="markersOutline">
+                        <%
+                                var html="";
+                                var selected="";
+                                var outlines = ["solid","dotted","dashed"];
+                                outlines.forEach(function(value,index) {
+                                    if(value == markersOutline ){
+                                        selected = " selected";
+                                    }
+                                    html+= "<option" + selected + ">" + value + "<\/option>";
+                                    selected="";
+                                });
+                             %>
+                           <%= html %>
+                     </select>
+                  </p>
+
+                  <label class="control-label">Markers width:</label>
+                  <p data-help="Set the outline width" class="controls">
+                     <select class="markersWidth" name="markersWidth">
+                        <%
+                                var html="";
+                                var selected="";
+                                var widths = ["1px","2px"];
+                                widths.forEach(function(value,index) {
+                                    if(value == markersWidth ){
+                                        selected = " selected";
+                                    }
+                                    html+= "<option" + selected + ">" + value + "<\/option>";
+                                    selected="";
+                                });
+                             %>
+                           <%= html %>
+                     </select>
+                  </p>
+
+                  <label class="control-label">Markers color:</label>
+                  <p data-help="Set the outline color" class="controls">
+                     <select class="markersColor" name="markersColor">
+                        <%
+                                var html="";
+                                var selected="";
+                                var colors = ["initial","White","Black","Gray","Silver","Aqua","Lime","Green","Teal","Olive","Yellow","Fuchsia","Red","Purple","Maroon","Navy","Blue"];
+                                colors.forEach(function(value,index) {
+                                    if(value == markersColor ){
+                                        selected=" selected";
+                                    }
+                                    html+= "<option" + selected + " style='background:" + value + "'>" + value + "<\/option>";
+                                    selected="";
+                                });
+                             %>
+                           <%= html %>
+                     </select>
+                  </p>
+                  </div>
+
+
+               </div>
+
+               <div id="ftpSettings" class="tab-pane fade">
+                  <h4>Remote</h4>
+                  <label class="control-label">Website URL:</label>
+                  <p data-help="Enter the website address eg : http://www.yourwebsite.com/" class="controls">
+                     <input placeholder="http://www.yourwebsite.com/" class="webUrl" name="webUrl" type="text" value="<%= webUrl %>"> </p>
+
+                  <label class="control-label">Host:</label>
+                  <p data-help="Enter the FTP host address eg : ftp.yourwebsite.com" class="controls">
+                     <input class="host" name="host" type="text" value="<%= host %>"> </p>
+
+                  <label class="control-label">Port:</label>
+                  <p data-help="Enter the FTP host port default : 21" class="controls">
+                     <input placeholder="21" class="port" name="port" type="text" value="<%= port %>"></p>
+
+                  <label class="control-label">Root:</label>
+                  <p data-help="Enter the FTP host address eg : /httpdocs/" class="controls">
+                     <input placeholder="/httpdocs/" class="root" name="root" type="text" value="<%= root %>"> </p>
+
+                  <% if (sT !== undefined) { %>
+                     <label class="control-label">username:</label>
+                     <p data-help="Enter the FTP host username" class="controls">
+
+                        <input class="user" name="user" type="password" value="<%= decrypt(user, sT).toString(enc.Utf8) %>"> </p>
+
+                     <label class="control-label">password:</label>
+                     <p data-help="Enter the FTP host password" class="controls">
+                        <input class="password" name="password" type="password" value="<%= decrypt(password, sT).toString(enc.Utf8) %>">
+                        <br>
+                     </p>
+                  <% } %>
+                  <div>
+                     <a class="btn checkLogin"><i class="fa fa-cog"></i> Test</a>
+                     <!--a id="connectFTP" class="btn"><i class="fa fa-sign-in"></i> Connect</a-->
+                  </div>
+               </div>
+
+               <div id="connect" class="tab-pane fade">
+                  <h4>Connect to:</h4>
+                  <p><%= webUrl %></p>
+                  <p></p>
+               </div>
+
+               <div id="toolbar" class="tab-pane fade">
+                  <h4>Toolbar</h4>
+                  <p>Customise toolbar</p>
+                  <div class="btn btn-primary" href="#" role="button">
+                     <i class="fa fa-bold"></i>
+                     <% var checked = ""; if(bold === "true" ) {checked = " checked";} %>
+                        <input class="bold" name="bold" type="checkbox" data-value="<%= bold %>" value="true" <%= checked %>>
+                  </div>
+                  <div class="btn btn-primary" href="#" role="button">
+                     <i class="fa fa-italic"></i>
+                     <% var checked = ""; if(italic === "true" ) {checked = " checked";} %>
+                        <input class="italic" name="italic" type="checkbox" data-value="<%= italic %>" value="true" <%= checked %>>
+                  </div>
+                  <div class="btn btn-primary" href="#" role="button">
+                     <i class="fa fa-underline"></i>
+                     <% var checked = ""; if(underline === "true" ) {checked = " checked";} %>
+                        <input class="underline" name="underline" type="checkbox" data-value="<%= underline %>" value="true" <%= checked %>>
+                  </div>				 
+					</div>
+
+					<div id="editable" class="tab-pane fade">
+                  <h4>Editable  -  (CSS classNames or id's)</h4>
+                  <p data-help="Existing defined CSS paths" class="controls">
+                     <select class="editable" size="5" name="editable">
+                        <%
+                        var html="";
+                        var selected="";
+                        var selectors = editable.split(",");
+                        for(var i=0; i<selectors.length; i++){
+                           if(i === 0){
+                              selected = " selected";
+                           }
+                           if (selectors[i].length > 0){
+                              html+= "<option" +selected+ ">" + selectors[i] + "</option>";
+                           }
+                           selected="";
+                        }
+                        %>
+                        <%= html %>
+                     </select>
+                  </p>
+                  <p data-help="Enter valid CSS paths to target where to attach editable sections on a webpage" class="controls">
+                     <input id="item" type="text" value="<%= selectors[0] %>">
+                     <a class="btn fa fa-plus _add"></a>
+                     <a class="btn fa fa-trash-o _delete"></a>
+                     <a class="btn fa fa-check _update"></a>
+                  </p>
+               </div>
+
+               <div id="exclude" class="tab-pane fade">
+                  <h4>Exclude</h4>
+                  <p data-help="Exclude these files from showing in the ftpTree" class="controls">
+                     <select class="exclude" size="5" name="exclude">
+                        <%
+                        var html="";
+                        var selected="";
+                        var selectors = exclude.split(",");
+                        for(var i=0; i<selectors.length; i++){
+                           if(i === 0){
+                              selected = " selected";
+                           }
+                           if (selectors[i].length > 0){
+                              html+= "<option" +selected+ ">" + selectors[i] + "</option>";
+                           }
+                           selected="";
+                        }
+                        %>
+                        <%= html %>
+                     </select>
+                  </p>
+                  <p data-help="Exclude these files from showing in the ftpTree" class="controls">
+                     <input id="item" type="text" value="<%= selectors[0] %>">
+                     <a class="btn fa fa-plus _add"></a>
+                     <a class="btn fa fa-trash-o _delete"></a>
+                     <a class="btn fa fa-check _update"></a>
+                  </p>
+               </div>
+
+               <div id="help" class="tab-pane fade" style="overflow:visible;overflow-y:hidden;">
+                  <a style="font-size:13.0em;float:right;margin:15px 0 0 0" class="fa fa-question-circle"></a>
+						<h4>Online help</h4>
+                  <p>Is available <a href="<%= RS %>">here</a></p>
+               </div>
+
+               <div id="about" class="tab-pane fade">
+						<h1><a style="position:relative;top:5px;" class="spinner spin iL large"></a> Brackets<br>Website Admin <i style="font-size: 1.0em;position: relative;top: -4px;font-weight: bold;color:#2B85EA" class="text-info"><%= "v" + mData.version %></i>
+                     <span style="font-size: 0.5em;display: block;margin: 0 0 50px 0;text-indent: 0;"><% 
+                        if (typeof(welcome) !== 'undefined') {
+                        var
+                           welcome = name === "" ? '' : 'Welcome'; %>
+                        <%= welcome + '&nbsp;' + name %> 
+                        <% } %>
+                     </span>   
+                  </h1>
+						<div>
+							<p>Developed by 
+								<a 
+									href="mailto:nigelfrancois@hotmail.com?
+											subject=Bracket Website Admin&amp;
+											body=Hi Nigel, %0D%0ALoving the extension">Nigel Francois</a></p>
+							<p>I wanted to learn something new, so this is it!.</p>
+						</div>
+               </div>
+
+				</div>
+         </form>
+      </div>
+   </div>
+      <div class="modal-footer">
+         <span class="statusMsg"></span>
+         <button type="button" class="dialog-button btn" data-dismiss="modal" data-button-id="close">Close</button>
+         <% if (typeof(selfclose) !== 'undefined') { 
+					if(selfclose === false)	{ %>         
+			<button class="dialog-button btn primary" data-button-id="update">OK</button>
+			<% }} %>
+      </div>
+	
+<% if (typeof(dev) !== 'undefined' && typeof(update) !== 'undefined')	{
+		if(update === true) { %>
+			<button class="callback btn-success" style="
+				 position: absolute;
+				 top: 187px;
+				 width: 100%;
+				 text-align: center;
+				 z-index: 1;
+				 font-size:1.2em;
+			">Available update v0.0.5 - Install now!</button>
+<% }
+	} %>	
+
+</div>
