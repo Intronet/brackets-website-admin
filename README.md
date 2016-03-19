@@ -1,4 +1,4 @@
-#Brackets Website Admin
+#Brackets Website Admin v0.0.5
 
 ####Brackets Website Admin will allow the user to setup a FTP connection to any local project
 
