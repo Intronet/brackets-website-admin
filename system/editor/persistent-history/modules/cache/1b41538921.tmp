@@ -1,4 +1,0 @@
-setTimeout(function(){
-	alert('START');
-
-},5000);
