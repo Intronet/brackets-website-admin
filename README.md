@@ -1,6 +1,6 @@
 #Brackets Website Admin
 
-####Brackets Website Admin will allow the user to setup a FTP connection for your local projects
+##Brackets Website Admin will allow the user to setup a FTP connection for your local projects
 
 Just enter the local and remote settings. Once completed and saved, these details are encrypted using [CRYPTO-JS] and stored locally in [HTML5 Local Storage]
 
