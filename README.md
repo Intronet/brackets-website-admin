@@ -1,16 +1,16 @@
-#Brackets Website Admin
+# Brackets Website Admin
 
-##Brackets Website Admin will allow the user to setup a FTP connection for your local projects
+##### Brackets Website Admin will allow the user to setup a FTP connection for your local projects
 
 Just enter the local and remote settings. Once completed and saved, these details are encrypted using [CRYPTO-JS] and stored locally in [HTML5 Local Storage]
 
 Once an FTP connection has been setup several actions will be available to the user
 
-#####Local
+##### Local
   - Upload - **rightClick file/folder in sitetree**
   - Upload ALL from local project to remote root - **{Alt+U}**
 
-#####Remote
+##### Remote
   - Connect - **{Alt+R}**
   - Preview file - **supports images & docs**
   - Download file to local project - **rightClick file in sitetree**
